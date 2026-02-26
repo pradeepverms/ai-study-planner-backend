@@ -1,0 +1,24 @@
+{
+    "Limits": [
+      {
+        "id": 1,
+        "question": "lim x→0 (sin x)/x = ?",
+        "options": ["0", "1", "∞", "-1"],
+        "answer": "1"
+      },
+      {
+        "id": 2,
+        "question": "lim x→∞ 1/x = ?",
+        "options": ["0", "1", "∞", -1],
+        "answer": "0"
+      }
+    ],
+    "Derivatives": [
+      {
+        "id": 3,
+        "question": "d/dx (x²) = ?",
+        "options": ["x", "2x", "x²", "2"],
+        "answer": "2x"
+      }
+    ]
+  }
