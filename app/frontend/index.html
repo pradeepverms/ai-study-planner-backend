@@ -4,13 +4,18 @@
   <meta charset="utf-8" />
   <title>AI Study Planner</title>
   <style>
-    body { font-family: Arial; max-width: 800px; margin: auto; }
-    input, button { margin: 6px 0; padding: 6px; width: 100%; }
-    pre { background: #f5f5f5; padding: 10px; }
+    body { font-family: Arial; max-width: 820px; margin: auto; line-height: 1.4; }
+    h2,h3 { margin-top: 20px; }
+    input, button { margin: 6px 0; padding: 8px; width: 100%; }
+    button { cursor: pointer; }
+    pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    small { color: #666; }
   </style>
 </head>
 <body>
+
 <h2>AI Study Planner</h2>
+<small>Adaptive study planning that changes with your performance.</small>
 
 <script>
 if (!localStorage.getItem("user_id")) {
@@ -19,20 +24,25 @@ if (!localStorage.getItem("user_id")) {
 const user_id = localStorage.getItem("user_id");
 </script>
 
-<h3>Generate Plan</h3>
-<input id="exam" placeholder="Exam name" value="GATE DA">
-<input id="date" placeholder="Exam date YYYY-MM-DD" value="2027-02-07">
-<input id="hours" placeholder="Daily hours" value="3">
-<input id="level" placeholder="Level" value="beginner">
-<button onclick="gen()">Generate</button>
+<h3>1) Generate Plan</h3>
+<input id="exam" value="GATE DA">
+<input id="date" value="2027-02-07">
+<input id="hours" value="3">
+<input id="level" value="beginner">
+<button onclick="gen()">Generate Plan</button>
 <pre id="out1"></pre>
 
-<h3>Submit Feedback</h3>
-<input id="day" placeholder="Day" value="1">
-<input id="acc" placeholder="Accuracy" value="85">
-<input id="time" placeholder="Time spent (min)" value="120">
-<button onclick="fb()">Submit</button>
+<h3>2) Submit Today’s Feedback</h3>
+<small>Be honest. The system adapts based on this.</small>
+<input id="day" value="1">
+<input id="acc" value="85">
+<input id="time" value="120">
+<button onclick="fb()">Submit Feedback</button>
 <pre id="out2"></pre>
+
+<h3>3) See Metrics (Proof)</h3>
+<button onclick="mx()">View Metrics</button>
+<pre id="out3"></pre>
 
 <script>
 const API = "YOUR_RENDER_URL";
@@ -66,6 +76,12 @@ async function fb() {
   });
   out2.textContent = JSON.stringify(await res.json(), null, 2);
 }
+
+async function mx() {
+  const res = await fetch(API + "/metrics/overview?user_id=" + user_id);
+  out3.textContent = JSON.stringify(await res.json(), null, 2);
+}
 </script>
+
 </body>
 </html>
