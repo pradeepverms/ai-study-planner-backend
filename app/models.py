@@ -24,10 +24,17 @@ class DailyProgress(Base):
 class AdaptiveDecision(Base):
     __tablename__ = "adaptive_decisions"
     id = Column(Integer, primary_key=True, index=True)
-    window = Column(String)  # "daily" or "weekly"
+    window = Column(String)  # daily / weekly
     adjustment = Column(String)
     reason = Column(String)
     next_day_hours = Column(Integer)
     difficulty = Column(String)
     confidence = Column(Float)
     timestamp = Column(DateTime, default=datetime.utcnow)
+
+class Streak(Base):
+    __tablename__ = "streaks"
+    id = Column(Integer, primary_key=True, index=True)
+    current = Column(Integer, default=0)
+    best = Column(Integer, default=0)
+    updated_at = Column(DateTime, default=datetime.utcnow)
