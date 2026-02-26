@@ -1,36 +1,33 @@
-from datetime import date, timedelta
+from typing import Dict
 
+def analyze_feedback(feedback: Dict) -> Dict:
+    accuracy = feedback["accuracy"]
+    time_spent = feedback["time_spent"]
+    completed = feedback["completed"]
 
-def generate_adaptive_plan(exam_date, topics, weak_topics):
-    today = date.today()
-    days_left = (exam_date - today).days
+    if not completed:
+        return {
+            "adjustment": "reduce_load",
+            "next_day_hours": max(2, time_spent - 1),
+            "reason": "Task not completed. Reducing load to rebuild consistency."
+        }
 
-    if days_left <= 0:
-        return {"error": "Exam date must be in the future"}
+    if accuracy < 50:
+        return {
+            "adjustment": "increase_practice",
+            "next_day_hours": time_spent + 1,
+            "reason": "Low accuracy. Increasing practice time."
+        }
 
-    plan = []
-    current_day = today
-
-    # Weighting logic
-    weighted_topics = []
-
-    for topic in topics:
-        if topic in weak_topics:
-            weighted_topics.extend([topic] * 3)  # higher priority
-        else:
-            weighted_topics.append(topic)
-
-    index = 0
-    while current_day <= exam_date:
-        plan.append({
-            "date": current_day.isoformat(),
-            "topic": weighted_topics[index % len(weighted_topics)],
-            "task": "Study + Practice Questions"
-        })
-        current_day += timedelta(days=1)
-        index += 1
+    if accuracy < 75:
+        return {
+            "adjustment": "balanced",
+            "next_day_hours": time_spent,
+            "reason": "Average accuracy. Keeping difficulty stable."
+        }
 
     return {
-        "days_left": days_left,
-        "adaptive_plan": plan
+        "adjustment": "increase_difficulty",
+        "next_day_hours": time_spent + 1,
+        "reason": "High accuracy. Increasing challenge level."
     }

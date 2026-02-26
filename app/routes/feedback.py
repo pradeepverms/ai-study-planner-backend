@@ -1,26 +1,22 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from typing import List
-from app.logic.feedback_engine import evaluate_exam
+from app.logic.adaptive_engine import analyze_feedback
 
 router = APIRouter(
     prefix="/feedback",
-    tags=["Feedback Engine"]
+    tags=["Feedback"]
 )
 
-
-class AnswerSubmission(BaseModel):
-    question_id: int
-    topic: str
-    correct_answer: str
-    user_answer: str
-
-
 class FeedbackRequest(BaseModel):
-    submissions: List[AnswerSubmission]
+    day: int
+    completed: bool
+    accuracy: int
+    time_spent: int
 
-
-@router.post("/evaluate")
-def evaluate(payload: FeedbackRequest):
-    result = evaluate_exam([s.dict() for s in payload.submissions])
-    return result
+@router.post("/submit")
+def submit_feedback(payload: FeedbackRequest):
+    adjustment = analyze_feedback(payload.dict())
+    return {
+        "day": payload.day,
+        "adaptive_response": adjustment
+    }
