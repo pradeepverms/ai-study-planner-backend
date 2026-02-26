@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
-from app.models import DailyProgress, AdaptiveDecision
+from app.models import DailyProgress, AdaptiveDecision, StudyPlan
 
 router = APIRouter(prefix="/feedback", tags=["Feedback"])
 
@@ -28,24 +28,41 @@ def submit_feedback(payload: dict, db: Session = Depends(get_db)):
     )
     db.add(progress)
 
-    if accuracy >= 80:
+    plan = db.query(StudyPlan).first()
+    if not plan:
+        return {"error": "Planner not initialized"}
+
+    # Daily adaptive rule (capped)
+    if not completed:
+        adjustment = "force_revision"
+        plan.daily_hours = max(2, plan.daily_hours - 1)
+        plan.difficulty = "easy"
+        reason = "Task incomplete"
+        conf = 0.8
+    elif accuracy >= 90 and time_spent <= plan.daily_hours * 60:
         adjustment = "increase_difficulty"
-        next_hours = time_spent + 10
-        reason = "High accuracy, increasing challenge"
+        plan.daily_hours = min(6, plan.daily_hours + 1)
+        plan.difficulty = "hard"
+        reason = "Excellent accuracy with efficient time"
+        conf = 0.9
     elif accuracy < 50:
         adjustment = "decrease_difficulty"
-        next_hours = max(30, time_spent - 10)
-        reason = "Low accuracy, reducing load"
+        plan.daily_hours = max(2, plan.daily_hours - 1)
+        plan.difficulty = "easy"
+        reason = "Low accuracy"
+        conf = 0.85
     else:
         adjustment = "keep_same"
-        next_hours = time_spent
-        reason = "Balanced performance"
+        reason = "Stable day"
+        conf = 0.6
 
     decision = AdaptiveDecision(
-        day=day,
+        window="daily",
         adjustment=adjustment,
         reason=reason,
-        next_day_hours=next_hours
+        next_day_hours=plan.daily_hours,
+        difficulty=plan.difficulty,
+        confidence=conf
     )
 
     db.add(decision)
@@ -55,7 +72,9 @@ def submit_feedback(payload: dict, db: Session = Depends(get_db)):
         "day": day,
         "adaptive_response": {
             "adjustment": adjustment,
-            "next_day_hours": next_hours,
-            "reason": reason
+            "next_day_hours": plan.daily_hours,
+            "difficulty": plan.difficulty,
+            "reason": reason,
+            "confidence": conf
         }
     }

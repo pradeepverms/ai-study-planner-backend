@@ -4,11 +4,11 @@ from app.routes import planner, feedback
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="AI Study Planner", version="2.0")
+app = FastAPI(title="AI Study Planner", version="3.0")
 
 app.include_router(planner.router)
 app.include_router(feedback.router)
 
 @app.get("/")
 def root():
-    return {"message": "AI Study Planner v2 Running"}
+    return {"message": "AI Study Planner v3 Running"}
