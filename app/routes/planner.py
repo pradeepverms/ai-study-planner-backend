@@ -3,13 +3,16 @@ from pydantic import BaseModel
 from datetime import date
 from math import ceil
 
-router = APIRouter(prefix="/planner", tags=["Planner"])
+router = APIRouter(
+    prefix="/planner",
+    tags=["Planner"]
+)
 
 class PlannerRequest(BaseModel):
     exam_name: str
     exam_date: date
     daily_hours: int
-    level: str  # beginner / intermediate / advanced
+    level: str
 
 @router.post("/generate")
 def generate_plan(data: PlannerRequest):
@@ -34,18 +37,17 @@ def generate_plan(data: PlannerRequest):
 
     index = 0
     for day in range(days_left):
-        day_topics = topics[index:index + topics_per_day]
-        index += topics_per_day
+        if index >= len(topics):
+            break
 
         plan.append({
             "day": day + 1,
             "study_hours": data.daily_hours,
-            "topics": day_topics,
-            "practice_questions": len(day_topics) * 10
+            "topics": topics[index:index + topics_per_day],
+            "practice_questions": len(topics[index:index + topics_per_day]) * 10
         })
 
-        if index >= len(topics):
-            break
+        index += topics_per_day
 
     return {
         "exam": data.exam_name,
