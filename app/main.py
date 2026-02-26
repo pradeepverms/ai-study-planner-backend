@@ -1,18 +1,23 @@
 from fastapi import FastAPI
-from app.database import Base, engine
-from app.routes import planner, feedback
-from app.routes.reports import router as reports_router
-from app.routes.metrics import router as metrics_router
+from fastapi.middleware.cors import CORSMiddleware
 
-Base.metadata.create_all(bind=engine)
+from app.routes.planner import router as planner_router
+from app.routes.feedback import router as feedback_router
 
-app = FastAPI(title="AI Study Planner", version="6.0")
+app = FastAPI(title="AI Study Planner")
 
-app.include_router(planner.router)
-app.include_router(feedback.router)
-app.include_router(reports_router)
-app.include_router(metrics_router)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # allow frontend access
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def root():
-    return {"message": "AI Study Planner v6 Running"}
+    return {"message": "AI Study Planner Backend Running"}
+
+# Routes
+app.include_router(planner_router, prefix="/planner", tags=["Planner"])
+app.include_router(feedback_router, prefix="/feedback", tags=["Feedback"])

@@ -1,85 +1,119 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>AI Study Planner</title>
-  <style>
-    body { font-family: Arial; max-width: 820px; margin: auto; line-height: 1.4; }
-    h2,h3 { margin-top: 20px; }
-    input, button { margin: 6px 0; padding: 8px; width: 100%; }
-    button { cursor: pointer; }
-    pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
-    small { color: #666; }
-  </style>
+    <meta charset="UTF-8">
+    <title>AI Study Planner</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        input, select, button { width: 100%; padding: 8px; margin: 6px 0; }
+        button { background: #2563eb; color: white; border: none; cursor: pointer; }
+        pre { background: #111; color: #0f0; padding: 10px; }
+        .error { color: red; font-weight: bold; }
+    </style>
 </head>
 <body>
 
-<h2>AI Study Planner</h2>
-<small>Adaptive study planning that changes with your performance.</small>
+<h1>AI Study Planner</h1>
+<p>Create a personalized, adaptive study plan.</p>
+
+<hr>
+
+<h2>1️⃣ Generate Study Plan</h2>
+
+<label>Exam Name</label>
+<input id="exam_name" value="GATE DA">
+
+<label>Exam Date (YYYY-MM-DD)</label>
+<input id="exam_date" type="date" value="2027-01-31">
+
+<label>Daily Study Hours</label>
+<input id="daily_hours" type="number" value="4">
+
+<label>Level</label>
+<select id="level">
+    <option value="beginner">Beginner</option>
+    <option value="intermediate">Intermediate</option>
+    <option value="advanced">Advanced</option>
+</select>
+
+<button onclick="generatePlan()">Generate Plan</button>
+
+<p id="plan_status"></p>
+<pre id="plan_output"></pre>
+
+<hr>
+
+<h2>2️⃣ Submit Daily Feedback</h2>
+
+<label>Day Number</label>
+<input id="day" type="number" value="1">
+
+<label>Completed?</label>
+<select id="completed">
+    <option value="true">Yes</option>
+    <option value="false">No</option>
+</select>
+
+<label>Accuracy (%)</label>
+<input id="accuracy" type="number" value="80">
+
+<label>Time Spent (minutes)</label>
+<input id="time_spent" type="number" value="60">
+
+<button onclick="submitFeedback()">Submit Feedback</button>
+
+<p id="feedback_status"></p>
+<pre id="feedback_output"></pre>
 
 <script>
-if (!localStorage.getItem("user_id")) {
-  localStorage.setItem("user_id", crypto.randomUUID());
-}
-const user_id = localStorage.getItem("user_id");
-</script>
+const BASE_URL = "https://ai-study-planner-backend-1-9ynd.onrender.com";
 
-<h3>1) Generate Plan</h3>
-<input id="exam" value="GATE DA">
-<input id="date" value="2027-02-07">
-<input id="hours" value="3">
-<input id="level" value="beginner">
-<button onclick="gen()">Generate Plan</button>
-<pre id="out1"></pre>
+async function generatePlan() {
+    document.getElementById("plan_status").innerText = "Loading...";
+    document.getElementById("plan_output").innerText = "";
 
-<h3>2) Submit Today’s Feedback</h3>
-<small>Be honest. The system adapts based on this.</small>
-<input id="day" value="1">
-<input id="acc" value="85">
-<input id="time" value="120">
-<button onclick="fb()">Submit Feedback</button>
-<pre id="out2"></pre>
+    try {
+        const res = await fetch(`${BASE_URL}/planner/generate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                exam_name: document.getElementById("exam_name").value,
+                exam_date: document.getElementById("exam_date").value,
+                daily_hours: Number(document.getElementById("daily_hours").value),
+                level: document.getElementById("level").value
+            })
+        });
 
-<h3>3) See Metrics (Proof)</h3>
-<button onclick="mx()">View Metrics</button>
-<pre id="out3"></pre>
-
-<script>
-const API = "https://ai-study-planner-backend-1-9ynd.onrender.com/";
-
-async function gen() {
-  const res = await fetch(API + "/planner/generate", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      user_id,
-      exam_name: exam.value,
-      exam_date: date.value,
-      daily_hours: +hours.value,
-      level: level.value
-    })
-  });
-  out1.textContent = JSON.stringify(await res.json(), null, 2);
+        const data = await res.json();
+        document.getElementById("plan_status").innerText = "Plan Generated ✅";
+        document.getElementById("plan_output").innerText = JSON.stringify(data, null, 2);
+    } catch (err) {
+        document.getElementById("plan_status").innerText = "❌ Failed to fetch backend";
+    }
 }
 
-async function fb() {
-  const res = await fetch(API + "/feedback/submit", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      user_id,
-      day: +day.value,
-      completed: true,
-      accuracy: +acc.value,
-      time_spent: +time.value
-    })
-  });
-  out2.textContent = JSON.stringify(await res.json(), null, 2);
-}
+async function submitFeedback() {
+    document.getElementById("feedback_status").innerText = "Submitting...";
+    document.getElementById("feedback_output").innerText = "";
 
-async function mx() {
-  const res = await fetch(API + "/metrics/overview?user_id=" + user_id);
-  out3.textContent = JSON.stringify(await res.json(), null, 2);
+    try {
+        const res = await fetch(`${BASE_URL}/feedback/submit`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                day: Number(document.getElementById("day").value),
+                completed: document.getElementById("completed").value === "true",
+                accuracy: Number(document.getElementById("accuracy").value),
+                time_spent: Number(document.getElementById("time_spent").value)
+            })
+        });
+
+        const data = await res.json();
+        document.getElementById("feedback_status").innerText = "Feedback Submitted ✅";
+        document.getElementById("feedback_output").innerText = JSON.stringify(data, null, 2);
+    } catch (err) {
+        document.getElementById("feedback_status").innerText = "❌ Failed to fetch backend";
+    }
 }
 </script>
 
