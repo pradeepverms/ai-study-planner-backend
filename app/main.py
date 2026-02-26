@@ -1,10 +1,12 @@
 from fastapi import FastAPI
+from app.routes.planner import router as planner_router
 
-app = FastAPI()
+app = FastAPI(title="AI Study Planner")
 
 @app.get("/")
 def root():
     return {
-        "status": "ok",
-        "message": "Study Planner Backend is live"
+        "message": "AI Study Planner Backend Running"
     }
+
+app.include_router(planner_router)
