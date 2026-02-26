@@ -1,40 +1,48 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from database import get_db
-from models import PlannerState
+from datetime import datetime, date
+
+from app.database import SessionLocal
+from app.models import StudyPlan, DailyProgress, AdaptiveDecision
 
 router = APIRouter(prefix="/planner", tags=["Planner"])
 
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 @router.post("/generate")
 def generate_plan(payload: dict, db: Session = Depends(get_db)):
-    exam_name = payload["exam_name"]
+    exam = payload["exam_name"]
     level = payload["level"]
+    exam_date = date.fromisoformat(payload["exam_date"])
+    daily_hours = payload["daily_hours"]
 
-    state = db.query(PlannerState).first()
+    days_left = (exam_date - date.today()).days
+    if days_left <= 0:
+        return {"error": "Exam date must be in the future"}
 
-    if not state:
-        state = PlannerState(
-            exam_name=exam_name,
-            level=level,
-            daily_hours=payload["daily_hours"],
-            difficulty="medium",
-            day=1
-        )
-        db.add(state)
-        db.commit()
-        db.refresh(state)
+    plan = StudyPlan(exam=exam, level=level)
+    db.add(plan)
+    db.commit()
 
-    plan = {
-        "day": state.day,
-        "daily_hours": state.daily_hours,
-        "difficulty": state.difficulty,
-        "topics": ["Core Concepts", "Practice Questions"],
-        "practice_questions": state.daily_hours * 10
-    }
+    topics = ["Limits", "Continuity", "Differentiation", "Integration", "Matrices"]
+    daily_plan = []
+
+    for i in range(1, 6):
+        daily_plan.append({
+            "day": i,
+            "study_hours": daily_hours,
+            "topics": [topics[(i - 1) % len(topics)]],
+            "practice_questions": 10
+        })
 
     return {
-        "exam": state.exam_name,
-        "level": state.level,
-        "plan": plan
+        "exam": exam,
+        "level": level,
+        "days_left": days_left,
+        "daily_plan": daily_plan
     }
