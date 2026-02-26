@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from app.logic.adaptive_engine import analyze_feedback
+from datetime import datetime
 
 router = APIRouter(
     prefix="/feedback",
@@ -15,8 +15,16 @@ class FeedbackRequest(BaseModel):
 
 @router.post("/submit")
 def submit_feedback(payload: FeedbackRequest):
-    adjustment = analyze_feedback(payload.dict())
+    adjustment = "keep_same"
+
+    if payload.accuracy < 70:
+        adjustment = "increase_practice"
+    elif payload.accuracy > 90:
+        adjustment = "increase_difficulty"
+
     return {
         "day": payload.day,
-        "adaptive_response": adjustment
+        "adjustment": adjustment,
+        "next_day_hours": payload.time_spent + 1 if adjustment != "keep_same" else payload.time_spent,
+        "timestamp": datetime.utcnow().isoformat()
     }
