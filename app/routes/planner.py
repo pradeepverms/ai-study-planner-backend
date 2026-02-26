@@ -1,57 +1,40 @@
-from fastapi import APIRouter
-from pydantic import BaseModel
-from datetime import date
-from math import ceil
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from database import get_db
+from models import PlannerState
 
-router = APIRouter(
-    prefix="/planner",
-    tags=["Planner"]
-)
+router = APIRouter(prefix="/planner", tags=["Planner"])
 
-class PlannerRequest(BaseModel):
-    exam_name: str
-    exam_date: date
-    daily_hours: int
-    level: str
 
 @router.post("/generate")
-def generate_plan(data: PlannerRequest):
-    today = date.today()
-    days_left = (data.exam_date - today).days
+def generate_plan(payload: dict, db: Session = Depends(get_db)):
+    exam_name = payload["exam_name"]
+    level = payload["level"]
 
-    if days_left <= 0:
-        return {"error": "Exam date must be in the future"}
+    state = db.query(PlannerState).first()
 
-    topics = [
-        "Limits",
-        "Continuity",
-        "Differentiation",
-        "Applications of Derivatives",
-        "Integration",
-        "Definite Integrals",
-        "Differential Equations"
-    ]
+    if not state:
+        state = PlannerState(
+            exam_name=exam_name,
+            level=level,
+            daily_hours=payload["daily_hours"],
+            difficulty="medium",
+            day=1
+        )
+        db.add(state)
+        db.commit()
+        db.refresh(state)
 
-    topics_per_day = ceil(len(topics) / days_left)
-    plan = []
-
-    index = 0
-    for day in range(days_left):
-        if index >= len(topics):
-            break
-
-        plan.append({
-            "day": day + 1,
-            "study_hours": data.daily_hours,
-            "topics": topics[index:index + topics_per_day],
-            "practice_questions": len(topics[index:index + topics_per_day]) * 10
-        })
-
-        index += topics_per_day
+    plan = {
+        "day": state.day,
+        "daily_hours": state.daily_hours,
+        "difficulty": state.difficulty,
+        "topics": ["Core Concepts", "Practice Questions"],
+        "practice_questions": state.daily_hours * 10
+    }
 
     return {
-        "exam": data.exam_name,
-        "level": data.level,
-        "days_left": days_left,
-        "daily_plan": plan
+        "exam": state.exam_name,
+        "level": state.level,
+        "plan": plan
     }

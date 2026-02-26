@@ -1,30 +1,50 @@
-from fastapi import APIRouter
-from pydantic import BaseModel
-from datetime import datetime
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from database import get_db
+from models import PlannerState, Feedback
 
-router = APIRouter(
-    prefix="/feedback",
-    tags=["Feedback"]
-)
+router = APIRouter(prefix="/feedback", tags=["Feedback"])
 
-class FeedbackRequest(BaseModel):
-    day: int
-    completed: bool
-    accuracy: int
-    time_spent: int
 
 @router.post("/submit")
-def submit_feedback(payload: FeedbackRequest):
-    adjustment = "keep_same"
+def submit_feedback(payload: dict, db: Session = Depends(get_db)):
+    state = db.query(PlannerState).first()
 
-    if payload.accuracy < 70:
-        adjustment = "increase_practice"
-    elif payload.accuracy > 90:
+    if not state:
+        return {"error": "Planner not initialized"}
+
+    accuracy = payload["accuracy"]
+
+    # --- Adaptive rules ---
+    if accuracy > 75:
         adjustment = "increase_difficulty"
+        state.daily_hours = min(state.daily_hours + 1, 6)
+        state.difficulty = "hard"
+    elif accuracy < 50:
+        adjustment = "decrease_difficulty"
+        state.daily_hours = max(state.daily_hours - 1, 2)
+        state.difficulty = "easy"
+    else:
+        adjustment = "maintain"
+        state.difficulty = "medium"
+
+    state.day += 1
+
+    feedback = Feedback(
+        day=state.day - 1,
+        completed=payload["completed"],
+        accuracy=accuracy,
+        time_spent=payload["time_spent"]
+    )
+
+    db.add(feedback)
+    db.commit()
 
     return {
-        "day": payload.day,
-        "adjustment": adjustment,
-        "next_day_hours": payload.time_spent + 1 if adjustment != "keep_same" else payload.time_spent,
-        "timestamp": datetime.utcnow().isoformat()
+        "day": state.day - 1,
+        "adaptive_response": {
+            "adjustment": adjustment,
+            "next_day_hours": state.daily_hours,
+            "reason": "Adaptive update based on performance"
+        }
     }

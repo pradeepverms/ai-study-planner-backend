@@ -1,12 +1,15 @@
 from fastapi import FastAPI
-from app.routes.planner import router as planner_router
-from app.routes.feedback import router as feedback_router
+from database import Base, engine
+from routes import planner, feedback
 
 app = FastAPI(title="AI Study Planner")
 
-app.include_router(planner_router)
-app.include_router(feedback_router)
+Base.metadata.create_all(bind=engine)
+
+app.include_router(planner.router)
+app.include_router(feedback.router)
+
 
 @app.get("/")
 def root():
-    return {"message": "AI Study Planner with Monetization Running"}
+    return {"message": "AI Study Planner Running"}

@@ -1,19 +1,23 @@
-from sqlalchemy import Column, Integer, String, Date, ForeignKey
-from app.database import Base
-
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
-    password = Column(String, nullable=False)
+from sqlalchemy import Column, Integer, String, Boolean
+from database import Base
 
 
-class Exam(Base):
-    __tablename__ = "exams"
+class PlannerState(Base):
+    __tablename__ = "planner_state"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    name = Column(String, nullable=False)
-    exam_date = Column(Date, nullable=False)
+    exam_name = Column(String, index=True)
+    level = Column(String)
+    daily_hours = Column(Integer)
+    difficulty = Column(String)
+    day = Column(Integer, default=1)
+
+
+class Feedback(Base):
+    __tablename__ = "feedback"
+
+    id = Column(Integer, primary_key=True, index=True)
+    day = Column(Integer)
+    completed = Column(Boolean)
+    accuracy = Column(Integer)
+    time_spent = Column(Integer)
