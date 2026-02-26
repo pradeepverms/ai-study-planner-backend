@@ -19,6 +19,7 @@ TOPICS = ["Limits", "Continuity", "Differentiation", "Integration", "Matrices"]
 
 @router.post("/generate")
 def generate_plan(payload: dict, db: Session = Depends(get_db)):
+    user_id = payload["user_id"]
     exam = payload["exam_name"]
     level = payload["level"]
     exam_date = date.fromisoformat(payload["exam_date"])
@@ -28,9 +29,10 @@ def generate_plan(payload: dict, db: Session = Depends(get_db)):
     if days_left <= 0:
         return {"error": "Exam date must be in the future"}
 
-    plan = db.query(StudyPlan).first()
+    plan = db.query(StudyPlan).filter_by(user_id=user_id).first()
     if not plan:
         plan = StudyPlan(
+            user_id=user_id,
             exam=exam,
             level=level,
             daily_hours=base_hours,
@@ -41,52 +43,42 @@ def generate_plan(payload: dict, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(plan)
 
-    # Weekly intelligence (last 7 days)
     last7 = (
         db.query(DailyProgress)
+        .filter_by(user_id=user_id)
         .order_by(DailyProgress.timestamp.desc())
         .limit(7)
         .all()
     )
 
-    adj = None
     if len(last7) >= 3:
         accs = [d.accuracy for d in last7]
         times = [d.time_spent for d in last7]
         acc_avg = mean(accs)
         acc_var = pstdev(accs) if len(accs) > 1 else 0
 
-        # Burnout: accuracy down + time up
         if acc_avg < 65 and mean(times) > plan.daily_hours * 60:
             plan.daily_hours = max(2, plan.daily_hours - 1)
             plan.difficulty = "easy"
-            adj = ("burnout", "Accuracy dropping with high effort", 0.85)
-
-        # Acceleration: accuracy high + stable
+            adj = ("burnout", "Accuracy down with high effort", 0.85)
         elif acc_avg >= 80 and acc_var < 8:
             plan.daily_hours = min(6, plan.daily_hours + 1)
             plan.difficulty = "hard"
             adj = ("accelerate", "Consistently high accuracy", 0.9)
-
-        # Avoidance: accuracy down + time down
-        elif acc_avg < 60 and mean(times) < plan.daily_hours * 40:
-            plan.daily_hours = max(2, plan.daily_hours - 1)
-            plan.difficulty = "easy"
-            adj = ("avoidance", "Low effort and low accuracy", 0.75)
+        else:
+            adj = None
 
         if adj:
-            decision = AdaptiveDecision(
+            db.add(AdaptiveDecision(
+                user_id=user_id,
                 window="weekly",
                 adjustment=adj[0],
                 reason=adj[1],
                 next_day_hours=plan.daily_hours,
                 difficulty=plan.difficulty,
                 confidence=adj[2]
-            )
-            db.add(decision)
-            db.commit()
+            ))
 
-    # Build next 5-day plan
     daily_plan = []
     for i in range(1, 6):
         daily_plan.append({

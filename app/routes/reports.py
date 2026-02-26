@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from statistics import mean
+
 from app.database import SessionLocal
 from app.models import DailyProgress, AdaptiveDecision, StudyPlan, Streak
 
@@ -14,8 +15,8 @@ def get_db():
         db.close()
 
 @router.get("/weekly")
-def weekly_report(db: Session = Depends(get_db)):
-    plan = db.query(StudyPlan).first()
+def weekly_report(user_id: str, db: Session = Depends(get_db)):
+    plan = db.query(StudyPlan).filter_by(user_id=user_id).first()
     if not plan:
         return {"error": "Planner not initialized"}
 
@@ -24,6 +25,7 @@ def weekly_report(db: Session = Depends(get_db)):
 
     last7 = (
         db.query(DailyProgress)
+        .filter_by(user_id=user_id)
         .order_by(DailyProgress.timestamp.desc())
         .limit(7)
         .all()
@@ -38,14 +40,14 @@ def weekly_report(db: Session = Depends(get_db)):
 
     decisions = (
         db.query(AdaptiveDecision)
+        .filter_by(user_id=user_id)
         .order_by(AdaptiveDecision.timestamp.desc())
         .limit(7)
         .all()
     )
-
     confidence_avg = mean([d.confidence for d in decisions]) if decisions else 0
 
-    streak = db.query(Streak).first()
+    streak = db.query(Streak).filter_by(user_id=user_id).first()
 
     burnout_risk = "low"
     if acc_avg < 65 and time_avg > plan.daily_hours * 60:

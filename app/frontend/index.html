@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>AI Study Planner</title>
+  <style>
+    body { font-family: Arial; max-width: 800px; margin: auto; }
+    input, button { margin: 6px 0; padding: 6px; width: 100%; }
+    pre { background: #f5f5f5; padding: 10px; }
+  </style>
+</head>
+<body>
+<h2>AI Study Planner</h2>
+
+<script>
+if (!localStorage.getItem("user_id")) {
+  localStorage.setItem("user_id", crypto.randomUUID());
+}
+const user_id = localStorage.getItem("user_id");
+</script>
+
+<h3>Generate Plan</h3>
+<input id="exam" placeholder="Exam name" value="GATE DA">
+<input id="date" placeholder="Exam date YYYY-MM-DD" value="2027-02-07">
+<input id="hours" placeholder="Daily hours" value="3">
+<input id="level" placeholder="Level" value="beginner">
+<button onclick="gen()">Generate</button>
+<pre id="out1"></pre>
+
+<h3>Submit Feedback</h3>
+<input id="day" placeholder="Day" value="1">
+<input id="acc" placeholder="Accuracy" value="85">
+<input id="time" placeholder="Time spent (min)" value="120">
+<button onclick="fb()">Submit</button>
+<pre id="out2"></pre>
+
+<script>
+const API = "YOUR_RENDER_URL";
+
+async function gen() {
+  const res = await fetch(API + "/planner/generate", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      user_id,
+      exam_name: exam.value,
+      exam_date: date.value,
+      daily_hours: +hours.value,
+      level: level.value
+    })
+  });
+  out1.textContent = JSON.stringify(await res.json(), null, 2);
+}
+
+async function fb() {
+  const res = await fetch(API + "/feedback/submit", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      user_id,
+      day: +day.value,
+      completed: true,
+      accuracy: +acc.value,
+      time_spent: +time.value
+    })
+  });
+  out2.textContent = JSON.stringify(await res.json(), null, 2);
+}
+</script>
+</body>
+</html>
