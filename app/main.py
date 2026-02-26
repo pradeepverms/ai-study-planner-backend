@@ -1,15 +1,12 @@
 from fastapi import FastAPI
-from database import Base, engine
-from routes import planner, feedback
+from app.routes import planner, feedback, adaptive
 
 app = FastAPI(title="AI Study Planner")
 
-Base.metadata.create_all(bind=engine)
-
 app.include_router(planner.router)
 app.include_router(feedback.router)
-
+app.include_router(adaptive.router)
 
 @app.get("/")
 def root():
-    return {"message": "AI Study Planner Running"}
+    return {"message": "AI Study Planner with Adaptive Intelligence Running"}
