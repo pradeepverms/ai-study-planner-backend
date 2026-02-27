@@ -2,7 +2,11 @@ from fastapi import FastAPI
 from schemas import PlanRequest, PlanResponse
 from planner import generate_plan
 
-app = FastAPI(title="AI Study Planner", version="2.1")
+app = FastAPI(
+    title="AI Study Planner",
+    version="2.0",
+    description="Deterministic, intelligence-driven study planner engine"
+)
 
 
 @app.get("/api/v1/health")
@@ -11,18 +15,5 @@ def health():
 
 
 @app.post("/api/v1/generate-plan", response_model=PlanResponse)
-def generate_study_plan(req: PlanRequest):
-    days_left, mode, plan = generate_plan(
-        req.exam,
-        req.exam_date,
-        req.daily_hours,
-        req.level,
-        req.topics,
-    )
-
-    return PlanResponse(
-        exam=req.exam,
-        days_left=days_left,
-        mode=mode,
-        daily_plan=plan,
-    )
+def generate_study_plan(payload: PlanRequest):
+    return generate_plan(payload)
