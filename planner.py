@@ -1,42 +1,35 @@
-from typing import List
-from schemas import DayPlan, DailySlot
+from datetime import date
+from schemas import DailyPlanItem
+from utils import expand_topics, compute_mode, confidence_by_mode, split_hours
 
 
-def build_daily_plan(topics: List[str], daily_hours: int, day: int) -> DayPlan:
-    slots = []
-    hours_left = daily_hours
+def generate_plan(
+    exam: str,
+    exam_date: date,
+    daily_hours: int,
+    level: str,
+    topics: list[str],
+):
+    today = date.today()
+    days_left = (exam_date - today).days
 
-    for topic in topics:
-        if hours_left <= 0:
-            break
-        slots.append(
-            DailySlot(
-                topic=topic,
-                duration="1h",
-                type="concept" if day <= 3 else "practice"
+    mode = compute_mode(days_left)
+    confidence = confidence_by_mode(mode)
+
+    expanded_topics = expand_topics(topics)
+    per_topic_hours = split_hours(daily_hours, len(expanded_topics))
+
+    plan = []
+
+    for subtopic in expanded_topics:
+        plan.append(
+            DailyPlanItem(
+                topic=subtopic.split()[0],
+                subtopic=subtopic,
+                duration_hours=per_topic_hours,
+                activity="revision + PYQs" if mode != "normal" else "concept + recall",
+                confidence=confidence,
             )
         )
-        hours_left -= 1
 
-    if hours_left > 0:
-        slots.append(
-            DailySlot(
-                topic="Revision",
-                duration=f"{hours_left}h",
-                type="recall"
-            )
-        )
-
-    return DayPlan(
-        day=day,
-        focus="Learning" if day <= 3 else "Reinforcement",
-        schedule=slots
-    )
-
-
-def revision_strategy():
-    return {
-        "same_day": "Quick recall (30%)",
-        "day_3": "Weak areas (70%)",
-        "day_7": "Full recall (90%)"
-    }
+    return days_left, mode, plan

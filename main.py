@@ -1,37 +1,35 @@
-from fastapi import FastAPI
-from schemas import PlanRequest, PlanResponse
-from utils import days_left, determine_mode
-from planner import build_daily_plan, revision_strategy
-
-app = FastAPI(title="AI Study Planner", version="1.0.0")
+from datetime import date
+from schemas import DailyPlanItem
+from utils import expand_topics, compute_mode, confidence_by_mode, split_hours
 
 
-@app.get("/api/v1/health")
-def health():
-    return {"status": "ok"}
+def generate_plan(
+    exam: str,
+    exam_date: date,
+    daily_hours: int,
+    level: str,
+    topics: list[str],
+):
+    today = date.today()
+    days_left = (exam_date - today).days
 
+    mode = compute_mode(days_left)
+    confidence = confidence_by_mode(mode)
 
-@app.post("/api/v1/generate-plan", response_model=PlanResponse)
-def generate_plan(req: PlanRequest):
-    days = days_left(req.exam_date)
-    mode = determine_mode(days)
+    expanded_topics = expand_topics(topics)
+    per_topic_hours = split_hours(daily_hours, len(expanded_topics))
 
     plan = []
-    total_days = min(7, days)  # 7-day rolling plan
 
-    for day in range(1, total_days + 1):
+    for subtopic in expanded_topics:
         plan.append(
-            build_daily_plan(
-                topics=req.topics,
-                daily_hours=req.daily_hours,
-                day=day
+            DailyPlanItem(
+                topic=subtopic.split()[0],
+                subtopic=subtopic,
+                duration_hours=per_topic_hours,
+                activity="revision + PYQs" if mode != "normal" else "concept + recall",
+                confidence=confidence,
             )
         )
 
-    return PlanResponse(
-        exam=req.exam,
-        days_left=days,
-        mode=mode,
-        plan=plan,
-        revision_strategy=revision_strategy()
-    )
+    return days_left, mode, plan

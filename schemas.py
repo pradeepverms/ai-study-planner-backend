@@ -5,27 +5,22 @@ from datetime import date
 
 class PlanRequest(BaseModel):
     exam: str = Field(..., example="GATE DA")
-    exam_date: date
-    daily_hours: int = Field(..., ge=1, le=16)
+    exam_date: date = Field(..., example="2028-02-05")
+    daily_hours: int = Field(..., gt=0, le=12)
     level: str = Field(..., example="beginner")
-    topics: List[str]
+    topics: List[str] = Field(..., example=["math"])
 
 
-class DailySlot(BaseModel):
+class DailyPlanItem(BaseModel):
     topic: str
-    duration: str
-    type: str
-
-
-class DayPlan(BaseModel):
-    day: int
-    focus: str
-    schedule: List[DailySlot]
+    subtopic: str
+    duration_hours: float
+    activity: str
+    confidence: float | None = None
 
 
 class PlanResponse(BaseModel):
     exam: str
     days_left: int
     mode: str
-    plan: List[DayPlan]
-    revision_strategy: dict
+    daily_plan: List[DailyPlanItem]
