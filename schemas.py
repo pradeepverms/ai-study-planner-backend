@@ -1,14 +1,14 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import List
 from datetime import date
 
 
 class PlanRequest(BaseModel):
-    exam: str = Field(..., example="GATE DA")
-    exam_date: date = Field(..., example="2028-02-05")
-    daily_hours: int = Field(..., gt=0, le=12)
-    level: str = Field(..., example="beginner")
-    topics: List[str] = Field(..., example=["math"])
+    exam: str
+    exam_date: date
+    daily_hours: int
+    level: str
+    topics: List[str]
 
 
 class DailyPlanItem(BaseModel):
@@ -16,7 +16,7 @@ class DailyPlanItem(BaseModel):
     subtopic: str
     duration_hours: float
     activity: str
-    confidence: float | None = None
+    confidence: float | None
 
 
 class PlanResponse(BaseModel):
