@@ -1,30 +1,31 @@
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Dict
 
 
 class PlanRequest(BaseModel):
     exam: str = Field(..., example="GATE DA")
     exam_date: str = Field(..., example="2028-02-08")
-    daily_hours: int = Field(..., ge=1, le=12, example=4)
+    daily_hours: int = Field(..., ge=1, le=12)
     level: str = Field(..., example="beginner")
-    topics: List[str] = Field(..., example=["calculus"])
+    topics: List[str]
 
 
-class SubTopicPlan(BaseModel):
-    name: str
-    duration_minutes: int
+class Activity(BaseModel):
+    topic: str
+    subtopic: str
+    duration_hours: float
     activity: str
     confidence: float
 
 
-class TopicPlan(BaseModel):
-    topic: str
-    total_hours: int
-    subtopics: List[SubTopicPlan]
+class DailyPlan(BaseModel):
+    day: int
+    total_hours: float
+    activities: List[Activity]
 
 
 class PlanResponse(BaseModel):
     exam: str
     days_left: int
     mode: str
-    daily_plan: List[TopicPlan]
+    daily_plan: List[DailyPlan]

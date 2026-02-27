@@ -1,12 +1,6 @@
 services:
   - type: web
-    name: ai-study-planner-backend
-    env: python
-    plan: free
+    name: ai-study-planner-backend-2
+    runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port 10000
-    envVars:
-      - key: ENV
-        value: production
-      - key: DATABASE_PATH
-        value: planner.db
